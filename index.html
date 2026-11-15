@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <title>きせつおでかけ帳</title>
 <style>
-:root{--bg:#f6f6f7;--card:#fff;--tx:#1d1d1f;--sub:#86868b;--line:#ececef;--ac:#5b6472;--on:#fff;--acs:color-mix(in srgb,var(--ac) 12%,var(--card));box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{--bg:#f6f6f7;--card:#fff;--tx:#1d1d1f;--sub:#86868b;--line:#ececef;--ac:#4fa37a;--on:#fff;--acs:color-mix(in srgb,var(--ac) 12%,var(--card));box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111113;--card:#1c1c1e;--tx:#f2f2f7;--sub:#8e8e93;--line:#2c2c2e;color-scheme:dark}
 body[data-s=winter]{--ac:#7da2e3;--on:#0b1630}}
 :root[data-theme="dark"]{--bg:#111113;--card:#1c1c1e;--tx:#f2f2f7;--sub:#8e8e93;--line:#2c2c2e;color-scheme:dark}
@@ -76,6 +76,8 @@ h3{margin:0 0 6px;font-size:15px}
 .mg button.on{background:var(--ac);color:var(--on);box-shadow:none}
 .two{display:flex;gap:8px}.two>*{flex:1}
 #toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(30,30,32,.92);color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;z-index:50;display:none;max-width:90%;text-align:center}
+#toast{pointer-events:none}
+#toast.mid{bottom:auto;top:50%;transform:translate(-50%,-50%);background:rgba(30,30,32,.96);font-size:15px;line-height:1.5;padding:14px 20px;border-radius:16px;max-width:80%}
 </style>
 </head>
 <body>
@@ -196,8 +198,89 @@ function startSync(){
     sbc.channel('spots-sync').on('postgres_changes',{event:'*',schema:'public',table:'spots'},()=>{clearTimeout(rt);rt=setTimeout(pull,300)}).subscribe()}}catch(e){}
 }
 /* ===== /Supabase sync ===== */
+/* ===== 自動入力 ===== */
+let fx=null;
+function arrS(a){return arr(a).map(x=>typeof x==='string'?{name:x}:x).filter(x=>x&&x.name)}
+function normSpot(o){
+  const g=(...k)=>{for(const x of k)if(o[x]!=null&&o[x]!=='')return o[x];return ''};
+  const m=g('months','month','おすすめ月');
+  return{name:String(g('name','title','スポット名','施設名')),months:Array.isArray(m)?m:(String(m).match(/\d+/g)||[]),cat:g('cat','category','カテゴリ'),addr:String(g('addr','address','住所')),pref:String(g('pref','prefecture','都道府県')),url:String(g('url','website','site','公式サイト')),resv:String(g('resv','reservation','予約開始日')),note:String(g('note','memo','メモ')),stops:arrS(o.stops),sched:arr(o.sched),budget:arr(o.budget),people:o.people}}
+function parseAI(t){
+  t=String(t||'').trim().replace(/^```[a-zA-Z]*\s*/,'').replace(/```\s*$/,'');
+  let v=null;
+  try{v=JSON.parse(t)}catch(e){const m=t.match(/[\[{][\s\S]*[\]}]/);if(m){try{v=JSON.parse(m[0])}catch(e2){}}}
+  if(v&&typeof v==='object'){
+    const a=Array.isArray(v)?v:(Array.isArray(v.spots)?v.spots:[v]);
+    const L=a.filter(x=>x&&typeof x==='object'&&(x.name||x.title||x['スポット名']||x['施設名']));
+    if(L.length)return{json:L}}
+  return{text:t}}
+function guessFromText(t,url){
+  const tm=t.match(/^Title:\s*(.+)$/m);
+  const lines=t.split(/\r?\n/).map(s=>s.replace(/^[#>\-*•・\s]+/,'').replace(/[*_`]/g,'').trim()).filter(Boolean);
+  const name=tm?tm[1].split(/\s[|｜\-–—]\s|[|｜]/)[0].trim():(lines.find(l=>!/^https?:/i.test(l)&&l.length<=40)||'');
+  const um=t.match(/https?:\/\/[^\s)）\]"'<>]+/);
+  const o={name:name.slice(0,60),url:url||(um?um[0]:''),addr:'',pref:'',note:'',cat:'',months:[]};
+  const am=t.match(new RegExp('(?:'+PREFS.join('|')+')[^\\s　、。\\n|｜]{2,40}'));
+  if(am){o.addr=am[0];o.pref=PREFS.find(p=>am[0].startsWith(p))||''}
+  const tel=t.match(/0\d{1,4}-\d{1,4}-\d{4}/);
+  const keep=lines.filter(l=>l.length<=120&&/営業時間|開館|定休|休業|休館|料金|円|チェックイン|チェックアウト|予約|駐車|アクセス/.test(l)).slice(0,14);
+  o.note=(keep.join('\n')+(tel?'\nTEL：'+tel[0]:'')).trim()||lines.slice(0,12).join('\n').slice(0,500);
+  o.cat=/キャンプ|テント|グランピング|コテージ|オートサイト/.test(t)?'キャンプ場':/レストラン|カフェ|ランチ|ラーメン|グルメ|パン|ベーカリー/.test(t)?'グルメ・お店':/体験|自然|公園|渓谷|滝|海|山/.test(t)?'自然・体験':'観光・その他';
+  return o}
+function fillForm(o){
+  if(o.name)$('#fn').value=o.name;
+  if(CATS.includes(o.cat))$('#fc').value=o.cat;
+  if(o.addr)$('#fa').value=o.addr;
+  const pf2=PREFS.includes(o.pref)?o.pref:(o.addr?(PREFS.find(p=>o.addr.includes(p))||''):'');
+  if(pf2)$('#fp').value=pf2;
+  if(o.url)$('#fu').value=o.url;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(o.resv||''))$('#fr').value=o.resv;
+  if(o.note)$('#fo').value=o.note;
+  const ms=[...new Set((o.months||[]).map(Number).filter(m=>m>=1&&m<=12))];
+  if(ms.length){fm=ms;drawFm()}
+  const st=arrS(o.stops),sc=arr(o.sched),bu=arr(o.budget);
+  fx=(st.length||sc.length||bu.length)?{stops:st,sched:sc,budget:bu,people:o.people}:null;
+  toast(fm.length?'各項目に反映しました。内容を確認して保存してください':'反映しました。おすすめの月を選んで保存してください');
+  const d=$('#fxd');if(d)d.open=false}
+function mergeFx(s0){
+  if(!fx||!s0)return;
+  const c=clean({stops:fx.stops,sched:fx.sched,budget:fx.budget});
+  c.stops.forEach(y=>{if(!s0.stops.some(z=>z.name===y.name))s0.stops.push(y)});
+  if(!s0.sched.length)s0.sched=c.sched;
+  if(!s0.budget.length)s0.budget=c.budget}
+function mergeSpots(a){
+  const ids=new Set(db.map(s=>s.id));let nw=0,up=0;
+  a.forEach(x=>{
+    const c=clean(x),ex=db.find(o=>o.name===c.name);
+    if(ex){up++;if(c.months.length)ex.months=c.months;if(CATS.includes(x.cat))ex.cat=c.cat;ex.addr=c.addr||ex.addr;ex.pref=c.pref||ex.pref;ex.url=c.url||ex.url;ex.resv=c.resv||ex.resv;ex.note=c.note||ex.note;
+      c.stops.forEach(y=>{if(!ex.stops.some(z=>z.name===y.name))ex.stops.push(y)});
+      if(!ex.sched.length)ex.sched=c.sched;if(!ex.budget.length)ex.budget=c.budget;return}
+    nw++;if(ids.has(c.id))c.id=uid();ids.add(c.id);db.unshift(c)});
+  fixRefs();persist();closeSheet();render();toast(nw+'件を追加、'+up+'件を更新しました')}
+function applyText(t,u){
+  t=String(t||'').trim();
+  if(!t){toast('貼り付ける内容がありません');return}
+  const p=parseAI(t);
+  if(p.json){const L=p.json.map(normSpot);if(L.length>1){mergeSpots(L);return}fillForm(L[0]);return}
+  fillForm(guessFromText(t,String(u||'').trim()))}
+async function fetchUrl(){
+  const u=$('#fx_url').value.trim();
+  if(!/^https?:\/\//i.test(u)){toast('https:// から始まるURLを入れてください');return}
+  toast('読み取り中…');
+  try{
+    const r=await fetch('https://r.jina.ai/'+u,{headers:{Accept:'text/plain'}});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const t=(await r.text()).slice(0,30000);
+    fillForm(guessFromText(t,u))}
+  catch(e){toast('読み取れませんでした。AIの出力の貼り付けをお試しください')}}
+function copyPrompt(){
+  const u=($('#fx_url').value||'').trim();
+  const p='次の施設・スポットの公式情報を調べて、下のJSON形式だけで出力してください（前後の説明文は不要です）。\n対象：'+(u||'（ここに公式サイトのURLか施設名）')+'\nルール：\n- 読み取れない項目は空にする。推測した値は入れない。ただしmonthsだけは、おすすめの月を1〜12の数字で入れてよい。\n- catは「キャンプ場」「グルメ・お店」「自然・体験」「観光・その他」のどれか。\n- prefは都道府県名（例：滋賀県）。\n- resvは予約開始日（YYYY-MM-DD）。不明なら空。\n- noteには営業時間・料金・アクセス・注意点を、1行ずつ改行して書く。\n- stopsは近くの立ち寄りスポット名、budgetは料金（amtは数字）。\n{"name":"","months":[],"cat":"","addr":"","pref":"","url":"","resv":"","note":"","stops":[{"name":""}],"budget":[{"name":"","amt":0}]}';
+  copy(p).then(()=>toast('指示文をコピーしました。ChatGPTなどに貼り付けてください'))}
+/* ===== /自動入力 ===== */
+
 const find=id=>db.find(s=>s.id===id);
-function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2400)}
+function toast(t){const e=$('#toast'),w=/ません|エラー|ください|失敗/.test(t);e.className=w?'mid':'';e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',w?3800:2400)}
 function arm(k,fn){if(armed===k){armed='';fn()}else{armed=k;toast('もう一度タップで削除');setTimeout(()=>{if(armed===k)armed=''},2600)}}
 function copy(t){return(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()})}
 
@@ -323,9 +406,16 @@ function sheet(h){$('#shc').innerHTML=h;$('#sh').style.display='flex'}
 function closeSheet(){$('#sh').style.display='none'}
 $('#sh').addEventListener('click',e=>{if(e.target.id==='sh')closeSheet()});
 function openForm(id){
-  fid=id||null;const s=id?find(id):{name:'',months:[],cat:CATS[0],addr:'',url:'',resv:'',note:''};
+  fid=id||null;fx=null;const s=id?find(id):{name:'',months:[],cat:CATS[0],addr:'',url:'',resv:'',note:''};
   fm=[...s.months];
   sheet(`<h3 style="font-size:17px">${id?'スポットを編集':'スポットを追加'}</h3>
+<details class="card" id="fxd" ${id?'':'open'} style="margin:0 0 4px"><summary style="font-weight:600;cursor:pointer">✨ 自動入力（URL・AIの出力から）</summary>
+<label>公式サイトのURLから読み取る</label>
+<div class="add"><input id="fx_url" type="url" inputmode="url" placeholder="https://"><button onclick="fetchUrl()">読み取り</button></div>
+<button class="btn alt" onclick="copyPrompt()">AIに頼むための指示文をコピー</button>
+<label>AIの出力やコピーした文章を貼り付け</label>
+<textarea id="fx_txt" placeholder="ChatGPTなどが出力したJSON、またはサイトの文章を貼り付け" style="min-height:90px"></textarea>
+<button class="btn" onclick="applyText($('#fx_txt').value,$('#fx_url').value)">貼り付けた内容を各項目に反映</button></details>
 <label>スポット名</label><input id="fn" value="${E(s.name)}" placeholder="例：〇〇キャンプ場">
 <label>おすすめの月（複数選択できます）</label><div class="mg" id="fmg"></div><div class="sub" id="fse" style="margin-top:6px"></div>
 <label>カテゴリ</label><select id="fc">${CATS.map(c=>`<option ${c===s.cat?'selected':''}>${c}</option>`).join('')}</select>
@@ -349,7 +439,7 @@ function saveForm(){
   if(!fm.length){toast('おすすめの月を選んでください');return}
   let u=$('#fu').value.trim();if(u&&!/^https?:\/\//i.test(u))u='https://'+u;
   const v={name,months:[...fm].sort((a,b)=>a-b),cat:$('#fc').value,addr:$('#fa').value.trim(),url:u,resv:$('#fr').value,note:$('#fo').value.trim(),pref:$('#fp').value};
-  if(fid){Object.assign(find(fid),v);db.forEach(o=>o.stops.forEach(x=>{if(x.ref===fid)x.name=v.name}))}else{db.unshift(clean(Object.assign(v,{id:uid()})))}
+  if(fid){Object.assign(find(fid),v);mergeFx(find(fid));db.forEach(o=>o.stops.forEach(x=>{if(x.ref===fid)x.name=v.name}))}else{db.unshift(clean(Object.assign(v,{id:uid()},fx||{})))}
   persist();closeSheet();cur?det():render();toast('保存しました')}
 </script>
 <script>
@@ -365,7 +455,7 @@ function openSet(){
 <b style="color:var(--tx)">基本</b><br>・上のタブで季節を選ぶと、その下に月が出ます。<br>・「🗾 地域で見る」に切り替えると、エリアとその下の都道府県で絞り込めます。<br>・右下の「＋ スポット追加」で登録し、カードをタップすると詳細と計画画面が開きます。<br>・詳細の右上✎で編集、編集画面の下の赤いボタン（2回タップ）で削除できます。<br><br>
 <b style="color:var(--tx)">おでかけ計画（詳細画面）</b><br>・Googleマップで経路を開く<br>・関連スポットに、道の駅やお店を追加できます。名前を入力すると登録済みスポットが候補に出て、選ぶと相手側にも自動で登録されます。<br>・時間と予定を追加すると時間順に並びます<br>・予算を入れると合計と1人あたりの金額が出ます（人数は＋−で変更）<br>・「予約リマインドをカレンダーに登録」で.icsを作成し、iPhoneカレンダー（TimeTree連携）に追加できます。予約開始日の登録が必要です。<br><br>
 <b style="color:var(--tx)">公式サイトのURLから登録する</b><br>1. Claudeのチャットに公式サイトのURLを送り、「アプリ用に」と伝えます。<br>2. 返ってきたJSONをコピーします。<br>3. このメニューの下の欄に貼り付け、「貼り付けたスポットを追加で取り込む」を押します。今あるデータは残ります。同じ名前のスポットは、重複せず内容を更新します。<br><br>
-<b style="color:var(--tx)">同期</b><br>・データはSupabaseに保存され、2台のスマホで自動で同期されます。画面上部の「☁︎」で状態を確認できます。<br>・相手が変更すると、数秒で自動的に反映されます。<br><br><b style="color:var(--tx)">バックアップ</b><br>・「全データをコピー」で書き出し、メモなどに保管してください。<br>・「復元」は今のデータをすべて上書きするので、ご注意ください。</div></details>
+<b style="color:var(--tx)">スポットの自動入力</b><br>・「＋ スポット追加」の「✨ 自動入力」に、公式サイトのURLを入れて「読み取り」を押すと、名前・住所などが入ります（簡易的な読み取り）。<br>・より正確にしたいときは、「AIに頼むための指示文をコピー」をChatGPTなどに貼り付け、出力を欄に貼り付けて反映します。<br>・複数件のJSONを貼ると、まとめて登録されます。<br><br><b style="color:var(--tx)">同期</b><br>・データはSupabaseに保存され、2台のスマホで自動で同期されます。画面上部の「☁︎」で状態を確認できます。<br>・相手が変更すると、数秒で自動的に反映されます。<br><br><b style="color:var(--tx)">バックアップ</b><br>・「全データをコピー」で書き出し、メモなどに保管してください。<br>・「復元」は今のデータをすべて上書きするので、ご注意ください。</div></details>
 <button class="btn" onclick="doExport()">全データをコピー（書き出し）</button>
 <label>バックアップのテキスト（コピー用・貼り付け用）</label>
 <textarea id="bk" style="min-height:140px;font-size:13px" placeholder="ここにバックアップを貼り付けて「復元」を押します"></textarea>
