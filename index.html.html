@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>きせつおでかけ帳</title>
+<style>
+:root{--bg:#f6f6f7;--card:#fff;--tx:#1d1d1f;--sub:#86868b;--line:#ececef;--ac:#4fa37a;--on:#fff;--acs:color-mix(in srgb,var(--ac) 12%,var(--card));box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111113;--card:#1c1c1e;--tx:#f2f2f7;--sub:#8e8e93;--line:#2c2c2e;color-scheme:dark}
+body[data-s=winter]{--ac:#7da2e3;--on:#0b1630}}
+:root[data-theme="dark"]{--bg:#111113;--card:#1c1c1e;--tx:#f2f2f7;--sub:#8e8e93;--line:#2c2c2e;color-scheme:dark}
+body[data-s=spring]{--ac:#e58aa5}body[data-s=summer]{--ac:#4aaee6}body[data-s=autumn]{--ac:#e8872c}body[data-s=winter]{--ac:#2b4a7c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.55 -apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;min-height:100%;transition:background .2s}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{font-size:16px;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--ac)}
+textarea{resize:vertical;min-height:84px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;padding:10px 14px 8px}
+.h1{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.h1 b{font-size:18px;letter-spacing:.02em}
+.ib{border:0;background:var(--card);width:38px;height:38px;border-radius:50%;font-size:18px;cursor:pointer;box-shadow:0 0 0 1px var(--line)}
+.tabs{display:flex;gap:4px;background:var(--card);padding:4px;border-radius:14px;box-shadow:0 0 0 1px var(--line)}
+.tabs button{flex:1;border:0;background:none;padding:9px 0;border-radius:10px;font-size:14px;font-weight:600;color:var(--sub);cursor:pointer;white-space:nowrap}
+.tabs button.on{background:var(--ac);color:var(--on)}
+.syn{font-size:11px;font-weight:400;color:var(--sub);margin-left:8px;cursor:pointer}
+.seg{display:flex;gap:6px;margin-bottom:8px}.seg button{flex:1;border:0;background:var(--card);padding:7px 0;border-radius:10px;font-size:13px;color:var(--sub);box-shadow:0 0 0 1px var(--line);cursor:pointer}.seg button.on{color:var(--tx);font-weight:600;box-shadow:0 0 0 2px var(--ac)}
+.tabs.scroll{overflow-x:auto}.tabs.scroll button{flex:none;padding:9px 14px}
+.sg{display:flex;justify-content:space-between;align-items:center;width:100%;border:0;background:var(--acs);border-radius:10px;padding:10px 12px;margin-top:6px;text-align:left;cursor:pointer}.sg span{font-size:12px;color:var(--sub)}
+.months{display:flex;gap:6px;margin:8px 0 0 14px;padding:8px 8px 8px 12px;border-left:3px solid var(--ac);background:var(--acs);border-radius:0 12px 12px 0;overflow-x:auto}
+.months button{border:0;background:var(--card);padding:6px 13px;border-radius:99px;font-size:14px;cursor:pointer;white-space:nowrap;box-shadow:0 0 0 1px var(--line)}
+.months button.on{background:var(--ac);color:var(--on);box-shadow:none}
+main{padding:6px 14px 110px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border-radius:16px;padding:14px 16px;margin:10px 0;box-shadow:0 0 0 1px var(--line)}
+.spot{cursor:pointer}
+.spot b{font-size:15px}
+.rord{display:flex;align-items:center;gap:12px;cursor:default}.rb{display:flex;flex-direction:column;gap:6px}.rc{flex:1;min-width:0}
+.mvb{width:46px;height:38px;border:0;border-radius:10px;background:var(--acs);font-size:15px;cursor:pointer;color:var(--tx)}.mvb:disabled{opacity:.3}
+.mv{border:0;background:none;color:var(--sub);font-size:13px;padding:6px 4px;cursor:pointer}.mv.on{color:var(--ac);font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px;font-size:13px;color:var(--sub)}
+.tag{background:var(--acs);color:var(--tx);padding:2px 10px;border-radius:99px;font-size:12.5px}
+.sub{font-size:13px;color:var(--sub);margin-top:2px}
+.empty{text-align:center;color:var(--sub);padding:56px 10px}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;border:0;background:var(--ac);color:var(--on);padding:15px 22px;border-radius:99px;font-weight:700;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer}
+.ov{position:fixed;inset:0;background:var(--bg);overflow:auto;display:none;z-index:20;-webkit-overflow-scrolling:touch}
+.ov .bar{position:sticky;top:0;background:var(--bg);display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 8px;z-index:2}
+.ov .bar b{flex:1;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pad{padding:0 14px calc(60px + env(safe-area-inset-bottom,0px));max-width:640px;margin:0 auto}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;width:100%;border:0;border-radius:12px;background:var(--ac);color:var(--on);font-weight:600;font-size:15px;text-decoration:none;cursor:pointer;margin-top:8px;padding:0 12px}
+.btn.alt{background:var(--acs);color:var(--tx)}
+.btn.danger{background:none;color:#d64545;box-shadow:0 0 0 1px var(--line)}
+h3{margin:0 0 6px;font-size:15px}
+.row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row .g{flex:1;min-width:0;overflow-wrap:anywhere}
+.row input[type=time]{width:106px;flex:none;padding:7px 8px}
+.row .x{border:0;background:none;color:var(--sub);font-size:18px;padding:4px 8px;cursor:pointer}
+.row a{text-decoration:none;font-size:18px}
+.ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);background:none;flex:none;cursor:pointer;color:var(--on);font-size:13px;line-height:1}
+.ck.on{background:var(--ac);border-color:var(--ac)}
+.done{text-decoration:line-through;color:var(--sub)}
+.add{display:flex;gap:8px;margin-top:8px}
+.add button{flex:none;border:0;background:var(--ac);color:var(--on);border-radius:10px;padding:0 16px;font-weight:600;cursor:pointer}
+.tot{display:flex;justify-content:space-between;align-items:baseline;padding-top:10px;border-top:1px solid var(--line);margin-top:4px}
+.tot b{font-size:20px}
+.step{display:flex;align-items:center;gap:10px}
+.step button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:18px;cursor:pointer}
+.sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:30;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:22px 22px 0 0;padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.sheet label{display:block;font-size:13px;color:var(--sub);margin:14px 0 5px}
+.mg{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.mg button{border:0;background:var(--card);padding:9px 0;border-radius:10px;box-shadow:0 0 0 1px var(--line);cursor:pointer}
+.mg button.on{background:var(--ac);color:var(--on);box-shadow:none}
+.two{display:flex;gap:8px}.two>*{flex:1}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(30,30,32,.92);color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;z-index:50;display:none;max-width:90%;text-align:center}
+#toast{pointer-events:none}
+#toast.mid{bottom:auto;top:50%;transform:translate(-50%,-50%);background:rgba(30,30,32,.96);font-size:15px;line-height:1.5;padding:14px 20px;border-radius:16px;max-width:80%}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="h1"><b>きせつおでかけ帳<span id="syn" class="syn" onclick="syncTap()"></span></b><button class="ib" onclick="openSet()" aria-label="設定">⚙️</button></div>
+  <div class="seg" id="ax"></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="months" id="months"></div>
+</header>
+<main id="list"></main>
+<button class="fab" onclick="openForm()">＋ スポット追加</button>
+<div class="ov" id="det"></div>
+<div class="sheetbg" id="sh"><div class="sheet" id="shc"></div></div>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const SEA={spring:['🌸','春',[3,4,5]],summer:['☀️','夏',[6,7,8]],autumn:['🍁','秋',[9,10,11]],winter:['❄️','冬',[12,1,2]]};
+const seasonOf=m=>Object.keys(SEA).find(k=>SEA[k][2].includes(m));
+const CATS=['キャンプ場','グルメ・お店','自然・体験','観光・その他'];
+const CI={'キャンプ場':'⛺','グルメ・お店':'🍴','自然・体験':'🌿','観光・その他':'📍'};
+const KEY='kisetsu-trip-v1';
+const REG=[['北海道',['北海道']],['東北',['青森県','岩手県','宮城県','秋田県','山形県','福島県']],['関東',['茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県']],['北陸・甲信越',['新潟県','富山県','石川県','福井県','山梨県','長野県']],['東海',['岐阜県','静岡県','愛知県','三重県']],['近畿',['滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県']],['中国',['鳥取県','島根県','岡山県','広島県','山口県']],['四国',['徳島県','香川県','愛媛県','高知県']],['九州・沖縄',['福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県']]];
+const PREFS=REG.flatMap(r=>r[1]);
+const prefOf=s=>s.pref||PREFS.find(p=>s.addr.includes(p))||'';
+const regOf=p=>(REG.find(r=>r[1].includes(p))||[''])[0];
+const p2=n=>String(n).padStart(2,'0');
+const yen=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
+const fd=d=>d?d.replace(/^(\d+)-0?(\d+)-0?(\d+)$/,'$1/$2/$3'):'';
+const mapDir=q=>'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(q);
+const mapQ=q=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
+const safeUrl=u=>/^https?:\/\//i.test(u)?u:'';
+const cid=x=>String(x||'').replace(/\W/g,'')||uid();
+const arr=a=>Array.isArray(a)?a:[];
+
+function clean(s){return{id:cid(s.id),name:String(s.name||'名称未設定'),months:[...new Set(arr(s.months).map(Number).filter(m=>m>=1&&m<=12))].sort((a,b)=>a-b),cat:CATS.includes(s.cat)?s.cat:CATS[3],addr:String(s.addr||''),pref:PREFS.includes(s.pref)?s.pref:'',url:String(s.url||''),resv:/^\d{4}-\d{2}-\d{2}$/.test(s.resv)?s.resv:'',note:String(s.note||''),
+stops:arr(s.stops).map(x=>({id:cid(x.id),name:String(x.name||''),done:!!x.done,ref:String(x.ref||'').replace(/\W/g,'')})),
+sched:arr(s.sched).map(x=>({id:cid(x.id),time:String(x.time||'').slice(0,5),text:String(x.text||'')})),
+budget:arr(s.budget).map(x=>({id:cid(x.id),name:String(x.name||''),amt:Math.max(0,Number(x.amt)||0)})),
+people:Math.max(1,Math.min(99,parseInt(s.people)||2))}}
+function sample(){return[
+{id:'s1',name:'〇〇高原キャンプ場',months:[7,8],cat:'キャンプ場',addr:'長野県北佐久郡軽井沢町',url:'https://example.com',resv:'2027-03-01',note:'ランタン、虫除け、焚き火シート。川沿いサイトは早めに満席になる。',
+stops:[{id:'a1',name:'道の駅 〇〇の郷',done:true},{id:'a2',name:'スーパーで食材を買う',done:false}],
+sched:[{id:'b1',time:'10:00',text:'チェックイン'},{id:'b2',time:'12:00',text:'道の駅でランチ'},{id:'b3',time:'18:00',text:'夕食のバーベキュー'}],
+budget:[{id:'c1',name:'高速代',amt:8400},{id:'c2',name:'キャンプ場代',amt:6000},{id:'c3',name:'食費',amt:12000}],people:4},
+{id:'s2',name:'ホエールウォッチング',months:[1,2,3],cat:'自然・体験',addr:'沖縄県島尻郡座間味村',url:'',resv:'2026-12-15',note:'酔い止めと防寒着を忘れずに。海が荒れると欠航になる。',stops:[],sched:[],budget:[],people:2},
+{id:'s3',name:'紅葉の湖畔カフェ',months:[10,11],cat:'グルメ・お店',addr:'',url:'',resv:'',note:'テラス席からの紅葉が見ごろ。',stops:[],sched:[],budget:[],people:2}].map(clean)}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const v=JSON.parse(r);if(Array.isArray(v))return v.map(clean)}}catch(e){}return sample()}
+let db=load(),ses='all',mon=0,cur=null,fm=[],fid=null,armed='',ax='season',rg='all',pf='',rord=false,VL=[];
+/* ===== Supabase sync ===== */
+const SB_URL='https://loxnujkkydngggehgzdr.supabase.co',SB_KEY='sb_publishable_cwXITAQbbDXLUunuf-H2xQ_04Ifu3WI';
+let rowMap={},lastSaved={},pushTimer=0,pushing=false,again=false,pend=false,pulling=false,sbc=null,rt=0,lastErr='',synState='';
+function cache(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
+function persist(){cache();pend=true;clearTimeout(pushTimer);pushTimer=setTimeout(push,400);setSyn('sync')}
+function setSyn(k,m){synState=k;if(m)lastErr=m;const e=$('#syn');if(!e)return;e.textContent=k==='ok'?'☁︎ 同期済み':k==='sync'?'☁︎ 同期中…':k==='err'?'⚠ 同期エラー（タップで再試行）':''}
+function syncTap(){if(synState==='err'&&lastErr)toast(lastErr);if(pend)push();else pull()}
+async function req(method,qs,body,rep){
+  const h={apikey:SB_KEY,'Content-Type':'application/json'};if(rep)h.Prefer='return=representation';
+  const r=await fetch(SB_URL+'/rest/v1/spots'+qs,{method,headers:h,body:body?JSON.stringify(body):undefined});
+  if(!r.ok)throw new Error('HTTP '+r.status+' '+(await r.text()).slice(0,120));
+  return(rep||method==='GET')?r.json():null}
+async function push(){
+  clearTimeout(pushTimer);pushTimer=0;
+  if(pushing){again=true;return}
+  pushing=true;setSyn('sync');
+  try{
+    db.forEach((s,i)=>{s.ord=i});
+    const ids=new Set(db.map(s=>s.id));
+    for(const sid of Object.keys(rowMap)){if(!ids.has(sid)){await req('DELETE','?id=eq.'+rowMap[sid]);delete rowMap[sid];delete lastSaved[sid]}}
+    for(const s of db){
+      const j=JSON.stringify(s);if(lastSaved[s.id]===j)continue;
+      const payload={data:Object.assign({},s,{upd:Date.now()})};
+      let done=false;
+      if(rowMap[s.id]){const r=await req('PATCH','?id=eq.'+rowMap[s.id],payload,true);done=r&&r.length>0}
+      if(!done){const r=await req('POST','',payload,true);rowMap[s.id]=r[0].id}
+      lastSaved[s.id]=j}
+    if(!again&&!pushTimer){pend=false;setSyn('ok')}
+  }catch(e){pend=true;setSyn('err',String(e.message||e));clearTimeout(pushTimer);pushTimer=setTimeout(push,10000)}
+  finally{pushing=false;if(again){again=false;clearTimeout(pushTimer);pushTimer=setTimeout(push,200)}}
+}
+async function pull(){
+  if(pulling||pend||pushing)return;
+  pulling=true;
+  try{
+    const rows=await req('GET','?select=id,data&order=id.asc');
+    rows.forEach(r=>{r.data=r.data||{}});
+    if(!rows.length){db.forEach((s,i)=>{s.ord=i});rowMap={};lastSaved={};persist();return}
+    const best={};
+    for(const r of rows){const sid=cid(r.data.id),b=best[sid];
+      if(!b){best[sid]=r;continue}
+      const u=Number(r.data.upd)||0,bu=Number(b.data.upd)||0;
+      if(u>bu){req('DELETE','?id=eq.'+b.id).catch(()=>{});best[sid]=r}else{req('DELETE','?id=eq.'+r.id).catch(()=>{})}}
+    const keep=Object.values(best).sort((a,b)=>(Number.isFinite(a.data.ord)?a.data.ord:1e9)-(Number.isFinite(b.data.ord)?b.data.ord:1e9)||String(a.id).localeCompare(String(b.id)));
+    const nd=keep.map((r,i)=>{const s=clean(r.data);s.ord=i;return s});
+    const nm={},ls={};keep.forEach((r,i)=>{nm[nd[i].id]=r.id;ls[nd[i].id]=JSON.stringify(nd[i])});
+    rowMap=nm;lastSaved=ls;
+    if(JSON.stringify(nd)!==JSON.stringify(db)){db=nd;cache();applyRemote()}
+    setSyn('ok')
+  }catch(e){setSyn('err',String(e.message||e))}
+  finally{pulling=false}
+}
+function applyRemote(){
+  render();
+  if(cur){
+    if(!find(cur)){closeD();return}
+    const a=document.activeElement;
+    if(a&&a.tagName==='INPUT'&&$('#det').contains(a)&&a.value){setTimeout(applyRemote,3000);return}
+    det()}
+}
+function startSync(){
+  pull();
+  setInterval(()=>{if(!document.hidden)pull()},12000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+  window.addEventListener('online',()=>pull());
+  try{if(window.supabase){sbc=supabase.createClient(SB_URL,SB_KEY);
+    sbc.channel('spots-sync').on('postgres_changes',{event:'*',schema:'public',table:'spots'},()=>{clearTimeout(rt);rt=setTimeout(pull,300)}).subscribe()}}catch(e){}
+}
+/* ===== /Supabase sync ===== */
+/* ===== 自動入力 ===== */
+let fx=null;
+function arrS(a){return arr(a).map(x=>typeof x==='string'?{name:x}:x).filter(x=>x&&x.name)}
+function normSpot(o){
+  const g=(...k)=>{for(const x of k)if(o[x]!=null&&o[x]!=='')return o[x];return ''};
+  const m=g('months','month','おすすめ月');
+  return{name:String(g('name','title','スポット名','施設名')),months:Array.isArray(m)?m:(String(m).match(/\d+/g)||[]),cat:g('cat','category','カテゴリ'),addr:String(g('addr','address','住所')),pref:String(g('pref','prefecture','都道府県')),url:String(g('url','website','site','公式サイト')),resv:String(g('resv','reservation','予約開始日')),note:String(g('note','memo','メモ')),stops:arrS(o.stops),sched:arr(o.sched),budget:arr(o.budget),people:o.people}}
+function parseAI(t){
+  t=String(t||'').trim().replace(/^```[a-zA-Z]*\s*/,'').replace(/```\s*$/,'');
+  let v=null;
+  try{v=JSON.parse(t)}catch(e){const m=t.match(/[\[{][\s\S]*[\]}]/);if(m){try{v=JSON.parse(m[0])}catch(e2){}}}
+  if(v&&typeof v==='object'){
+    const a=Array.isArray(v)?v:(Array.isArray(v.spots)?v.spots:[v]);
+    const L=a.filter(x=>x&&typeof x==='object'&&(x.name||x.title||x['スポット名']||x['施設名']));
+    if(L.length)return{json:L}}
+  return{text:t}}
+function guessFromText(t,url){
+  const tm=t.match(/^Title:\s*(.+)$/m);
+  const lines=t.split(/\r?\n/).map(s=>s.replace(/^[#>\-*•・\s]+/,'').replace(/[*_`]/g,'').trim()).filter(Boolean);
+  const name=tm?tm[1].split(/\s[|｜\-–—]\s|[|｜]/)[0].trim():(lines.find(l=>!/^https?:/i.test(l)&&l.length<=40)||'');
+  const um=t.match(/https?:\/\/[^\s)）\]"'<>]+/);
+  const o={name:name.slice(0,60),url:url||(um?um[0]:''),addr:'',pref:'',note:'',cat:'',months:[]};
+  const am=t.match(new RegExp('(?:'+PREFS.join('|')+')[^\\s　、。\\n|｜]{2,40}'));
+  if(am){o.addr=am[0];o.pref=PREFS.find(p=>am[0].startsWith(p))||''}
+  const tel=t.match(/0\d{1,4}-\d{1,4}-\d{4}/);
+  const keep=lines.filter(l=>l.length<=120&&/営業時間|開館|定休|休業|休館|料金|円|チェックイン|チェックアウト|予約|駐車|アクセス/.test(l)).slice(0,14);
+  o.note=(keep.join('\n')+(tel?'\nTEL：'+tel[0]:'')).trim()||lines.slice(0,12).join('\n').slice(0,500);
+  o.cat=/キャンプ|テント|グランピング|コテージ|オートサイト/.test(t)?'キャンプ場':/レストラン|カフェ|ランチ|ラーメン|グルメ|パン|ベーカリー/.test(t)?'グルメ・お店':/体験|自然|公園|渓谷|滝|海|山/.test(t)?'自然・体験':'観光・その他';
+  return o}
+function fillForm(o){
+  if(o.name)$('#fn').value=o.name;
+  if(CATS.includes(o.cat))$('#fc').value=o.cat;
+  if(o.addr)$('#fa').value=o.addr;
+  const pf2=PREFS.includes(o.pref)?o.pref:(o.addr?(PREFS.find(p=>o.addr.includes(p))||''):'');
+  if(pf2)$('#fp').value=pf2;
+  if(o.url)$('#fu').value=o.url;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(o.resv||''))$('#fr').value=o.resv;
+  if(o.note)$('#fo').value=o.note;
+  const ms=[...new Set((o.months||[]).map(Number).filter(m=>m>=1&&m<=12))];
+  if(ms.length){fm=ms;drawFm()}
+  const st=arrS(o.stops),sc=arr(o.sched),bu=arr(o.budget);
+  fx=(st.length||sc.length||bu.length)?{stops:st,sched:sc,budget:bu,people:o.people}:null;
+  toast(fm.length?'各項目に反映しました。内容を確認して保存してください':'反映しました。おすすめの月を選んで保存してください');
+  const d=$('#fxd');if(d)d.open=false}
+function mergeFx(s0){
+  if(!fx||!s0)return;
+  const c=clean({stops:fx.stops,sched:fx.sched,budget:fx.budget});
+  c.stops.forEach(y=>{if(!s0.stops.some(z=>z.name===y.name))s0.stops.push(y)});
+  if(!s0.sched.length)s0.sched=c.sched;
+  if(!s0.budget.length)s0.budget=c.budget}
+function mergeSpots(a){
+  const ids=new Set(db.map(s=>s.id));let nw=0,up=0;
+  a.forEach(x=>{
+    const c=clean(x),ex=db.find(o=>o.name===c.name);
+    if(ex){up++;if(c.months.length)ex.months=c.months;if(CATS.includes(x.cat))ex.cat=c.cat;ex.addr=c.addr||ex.addr;ex.pref=c.pref||ex.pref;ex.url=c.url||ex.url;ex.resv=c.resv||ex.resv;ex.note=c.note||ex.note;
+      c.stops.forEach(y=>{if(!ex.stops.some(z=>z.name===y.name))ex.stops.push(y)});
+      if(!ex.sched.length)ex.sched=c.sched;if(!ex.budget.length)ex.budget=c.budget;return}
+    nw++;if(ids.has(c.id))c.id=uid();ids.add(c.id);db.unshift(c)});
+  fixRefs();persist();closeSheet();render();toast(nw+'件を追加、'+up+'件を更新しました')}
+function applyText(t,u){
+  t=String(t||'').trim();
+  if(!t){toast('貼り付ける内容がありません');return}
+  const p=parseAI(t);
+  if(p.json){const L=p.json.map(normSpot);if(L.length>1){mergeSpots(L);return}fillForm(L[0]);return}
+  fillForm(guessFromText(t,String(u||'').trim()))}
+async function fetchUrl(){
+  const u=$('#fx_url').value.trim();
+  if(!/^https?:\/\//i.test(u)){toast('https:// から始まるURLを入れてください');return}
+  toast('読み取り中…');
+  try{
+    const r=await fetch('https://r.jina.ai/'+u,{headers:{Accept:'text/plain'}});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const t=(await r.text()).slice(0,30000);
+    fillForm(guessFromText(t,u))}
+  catch(e){toast('読み取れませんでした。AIの出力の貼り付けをお試しください')}}
+function copyPrompt(){
+  const u=($('#fx_url').value||'').trim();
+  const p='次の施設・スポットの公式情報を調べて、下のJSON形式だけで出力してください（前後の説明文は不要です）。\n対象：'+(u||'（ここに公式サイトのURLか施設名）')+'\nルール：\n- 読み取れない項目は空にする。推測した値は入れない。ただしmonthsだけは、おすすめの月を1〜12の数字で入れてよい。\n- catは「キャンプ場」「グルメ・お店」「自然・体験」「観光・その他」のどれか。\n- prefは都道府県名（例：滋賀県）。\n- resvは予約開始日（YYYY-MM-DD）。不明なら空。\n- noteには営業時間・料金・アクセス・注意点を、1行ずつ改行して書く。\n- stopsは近くの立ち寄りスポット名、budgetは料金（amtは数字）。\n{"name":"","months":[],"cat":"","addr":"","pref":"","url":"","resv":"","note":"","stops":[{"name":""}],"budget":[{"name":"","amt":0}]}';
+  copy(p).then(()=>toast('指示文をコピーしました。ChatGPTなどに貼り付けてください'))}
+/* ===== /自動入力 ===== */
+
+const find=id=>db.find(s=>s.id===id);
+function toast(t){const e=$('#toast'),w=/ません|エラー|ください|失敗/.test(t);e.className=w?'mid':'';e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',w?3800:2400)}
+function arm(k,fn){if(armed===k){armed='';fn()}else{armed=k;toast('もう一度タップで削除');setTimeout(()=>{if(armed===k)armed=''},2600)}}
+function copy(t){return(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()})}
+
+function setS(k){ses=k;mon=0;render()}
+function setAx(a){ax=a;render()}
+function setR(k){rg=k;pf='';render()}
+function setP(p){pf=p;render()}
+function drawAx(){$('#ax').innerHTML=[['season','🗓 季節で見る'],['region','🗾 地域で見る']].map(([k,l])=>`<button class="${ax===k?'on':''}" onclick="setAx('${k}')">${l}</button>`).join('')}
+function listOut(L,msg){
+  VL=L;
+  const bar=L.length>1?`<div style="text-align:right;margin-top:4px"><button class="mv ${rord?'on':''}" onclick="togRord()">${rord?'✓ 並び替えを終了':'↕ 並び替え'}</button></div>`:'';
+  $('#list').innerHTML=bar+(L.length?L.map(cardHtml).join(''):`<div class="empty">${msg}</div>`)}
+function togRord(){rord=!rord;render()}
+function mvSpot(id,d){
+  const i=VL.findIndex(s=>s.id===id),j=i+d;if(i<0||j<0||j>=VL.length)return;
+  const a=db.indexOf(VL[i]),b=db.indexOf(VL[j]);[db[a],db[b]]=[db[b],db[a]];persist();render()}
+function cardHtml(s){
+  const h=cardBase(s);if(!rord)return h;
+  const i=VL.indexOf(s),o=`<div class="card spot" onclick="openD('${s.id}')">`;
+  return h.replace(o,`<div class="card spot rord"><div class="rb"><button class="mvb" ${i<1?'disabled':''} onclick="mvSpot('${s.id}',-1)">▲</button><button class="mvb" ${i>=VL.length-1?'disabled':''} onclick="mvSpot('${s.id}',1)">▼</button></div><div class="rc">`)+'</div>'}
+function cardBase(s){
+  const se=[...new Set(s.months.map(seasonOf))].map(k=>SEA[k][0]).join(''),p=prefOf(s);
+  return`<div class="card spot" onclick="openD('${s.id}')"><b>${E(s.name)}</b><div class="meta"><span class="tag">${CI[s.cat]} ${E(s.cat)}</span><span>${se} ${s.months.join('・')}月</span>${p?`<span>${E(p)}</span>`:''}</div>${s.addr?`<div class="sub">📍 ${E(s.addr)}</div>`:''}${s.resv?`<div class="sub">⏰ 予約開始 ${fd(s.resv)}</div>`:''}</div>`}
+function renderRegion(){
+  document.body.dataset.s='';
+  const noPref=db.some(s=>!prefOf(s));
+  const tabs=[['all','すべて']].concat(REG.map(r=>[r[0],r[0]])).concat(noPref?[['none','未設定']]:[]);
+  const t=$('#tabs'),sl=t.scrollLeft;t.className='tabs scroll';
+  t.innerHTML=tabs.map(([k,l])=>`<button class="${rg===k?'on':''}" onclick="setR('${k}')">${l}</button>`).join('');t.scrollLeft=sl;
+  const mo=$('#months'),R=REG.find(r=>r[0]===rg),s2=mo.scrollLeft;
+  if(R){mo.style.display='flex';mo.innerHTML=`<button class="${pf?'':'on'}" onclick="setP('')">全域</button>`+R[1].map(p=>`<button class="${pf===p?'on':''}" onclick="setP('${p}')">${p}</button>`).join('');mo.scrollLeft=s2}else{mo.style.display='none'}
+  const L=db.filter(s=>{const p=prefOf(s);return rg==='all'||(rg==='none'?!p:(pf?p===pf:regOf(p)===rg))});
+  listOut(L,'この地域のスポットはまだありません。<br>スポットの住所か、編集画面の都道府県から地域が決まります。')}
+function setM(m){mon=m;render()}
+function render(){
+  drawAx();
+  if(ax==='region'){renderRegion();return}
+  $('#tabs').className='tabs';
+  document.body.dataset.s=ses==='all'?'':ses;
+  $('#tabs').innerHTML=[['all','すべて']].concat(Object.keys(SEA).map(k=>[k,SEA[k][0]+SEA[k][1]])).map(([k,l])=>`<button class="${ses===k?'on':''}" onclick="setS('${k}')">${l}</button>`).join('');
+  const mo=$('#months');
+  if(ses==='all'){mo.style.display='none'}else{mo.style.display='flex';mo.innerHTML=`<button class="${mon?'':'on'}" onclick="setM(0)">全月</button>`+SEA[ses][2].map(m=>`<button class="${mon===m?'on':''}" onclick="setM(${m})">${m}月</button>`).join('')}
+  const L=db.filter(s=>ses==='all'||(mon?s.months.includes(mon):s.months.some(m=>seasonOf(m)===ses)));
+  listOut(L,'この季節のスポットはまだありません。<br>右下の「＋ スポット追加」から登録しましょう。');
+}
+
+/* detail */
+function openD(id){cur=id;const d=$('#det');d.style.display='block';d.scrollTop=0;document.documentElement.style.overflow='hidden';det()}
+function closeD(){cur=null;$('#det').style.display='none';document.documentElement.style.overflow='';render()}
+function det(){
+  const s=find(cur);if(!s){closeD();return}
+  const d=$('#det'),sc=d.scrollTop;
+  document.body.dataset.s=seasonOf(s.months[0])||'';
+  const sched=[...s.sched].sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+  const tot=s.budget.reduce((a,b)=>a+b.amt,0);
+  const site=safeUrl(s.url);
+  d.innerHTML=`<div class="bar"><button class="ib" onclick="closeD()" aria-label="戻る">‹</button><b>${E(s.name)}</b><button class="ib" onclick="openForm('${s.id}')" aria-label="編集">✎</button></div><div class="pad">
+<div class="card"><div class="meta" style="margin:0 0 8px"><span class="tag">${CI[s.cat]} ${E(s.cat)}</span><span>${[...new Set(s.months.map(seasonOf))].map(k=>SEA[k][0]).join('')} ${s.months.join('・')}月</span></div>
+${s.addr?`<div>📍 ${E(s.addr)}</div>`:''}${s.resv?`<div>⏰ 予約開始 ${fd(s.resv)}</div>`:''}${s.note?`<div class="sub" style="white-space:pre-wrap;margin-top:8px">${E(s.note)}</div>`:''}
+${site?`<a class="btn alt" href="${E(site)}" target="_blank" rel="noopener">🔗 公式サイトを開く</a>`:''}
+<a class="btn" href="${mapDir(s.addr||s.name)}" target="_blank" rel="noopener">🗺 ここへの経路をGoogleマップで開く</a>
+<button class="btn alt" onclick="dlIcs()">📅 予約リマインドをカレンダーに登録</button>
+<div class="sub" style="text-align:center;margin-top:6px"><a href="#" onclick="copyIcs();return false" style="color:inherit">.icsの内容をコピー</a></div></div>
+
+<div class="card"><h3>🔗 関連スポット</h3>
+${s.stops.map(stopRow).join('')||'<div class="sub">道の駅やお店、近くの登録スポットを追加しましょう。</div>'}
+<div class="add"><input id="stn" placeholder="関連スポットを検索・追加" oninput="sug()" onkeydown="if(event.key==='Enter')addStop()"><button onclick="addStop()">追加</button></div><div id="stsg"></div></div>
+
+<div class="card"><h3>🕙 タイムスケジュール</h3>
+${sched.map(x=>`<div class="row"><input type="time" value="${E(x.time)}" onchange="setTime('${x.id}',this.value)"><span class="g">${E(x.text)}</span><button class="x" onclick="delIt('sched','${x.id}')">×</button></div>`).join('')||'<div class="sub">時間と予定を追加すると、時間順に並びます。</div>'}
+<div class="add"><input id="sct" type="time" style="width:116px;flex:none"><input id="sctx" placeholder="予定（例：チェックイン）" onkeydown="if(event.key==='Enter')addSch()"><button onclick="addSch()">追加</button></div></div>
+
+<div class="card"><h3>💰 予算と割り勘</h3>
+${s.budget.map(x=>`<div class="row"><span class="g">${E(x.name)}</span><b>${yen(x.amt)}</b><button class="x" onclick="delIt('budget','${x.id}')">×</button></div>`).join('')||'<div class="sub">高速代、キャンプ場代、食費などを追加しましょう。</div>'}
+<div class="add"><input id="bn" placeholder="項目名"><input id="ba" type="number" inputmode="numeric" min="0" placeholder="金額" style="width:110px;flex:none" onkeydown="if(event.key==='Enter')addBud()"><button onclick="addBud()">追加</button></div>
+<div class="tot"><span>合計</span><b>${yen(tot)}</b></div>
+<div class="tot" style="border:0;padding-top:6px;align-items:center"><span class="step"><button onclick="setPeople(-1)">−</button><span>${s.people}人</span><button onclick="setPeople(1)">＋</button></span><span>1人あたり <b style="color:var(--ac)">${yen(Math.ceil(tot/s.people))}</b></span></div></div>
+</div>`;
+  d.scrollTop=sc;
+}
+function mut(fn){const s=find(cur);if(!s)return;fn(s);persist();det()}
+function tg(id){mut(s=>{const x=s.stops.find(a=>a.id===id);if(x)x.done=!x.done})}
+function delIt(k,id){mut(s=>{s[k]=s[k].filter(a=>a.id!==id)})}
+function addStop(){const n=$('#stn').value.trim();if(!n)return;const o=db.find(z=>z.id!==cur&&z.name===n);if(o){linkSpot(o.id);return}mut(s=>s.stops.push({id:uid(),name:n,done:false,ref:''}))}
+function stopRow(x){
+  const o=x.ref?find(x.ref):null,nm=o?o.name:x.name;
+  return`<div class="row"><button class="ck ${x.done?'on':''}" onclick="tg('${x.id}')">${x.done?'✓':''}</button><span class="g ${x.done?'done':''}">${o?`<a href="#" onclick="openD('${o.id}');return false" style="color:inherit;font-size:inherit;text-decoration:underline">${E(nm)}</a> <span class="tag">登録済み</span>`:E(nm)}</span><a href="${mapQ(o?(o.addr||o.name):x.name)}" target="_blank" rel="noopener" aria-label="Googleマップで開く">🗺</a><button class="x" onclick="delStop('${x.id}')">×</button></div>`}
+function sug(){
+  const b=$('#stsg'),s=find(cur);if(!b||!s)return;
+  const k=$('#stn').value.trim().toLowerCase();
+  if(!k){b.innerHTML='';return}
+  const L=db.filter(o=>o.id!==cur&&!s.stops.some(x=>x.ref===o.id)&&o.name.toLowerCase().includes(k)).slice(0,5);
+  b.innerHTML=L.map(o=>`<button class="sg" onclick="linkSpot('${o.id}')"><b>${E(o.name)}</b><span>登録スポットとして追加</span></button>`).join('')}
+function linkSpot(oid){
+  const o=find(oid);if(!o||oid===cur)return;
+  mut(s=>{
+    if(!s.stops.some(x=>x.ref===oid))s.stops.push({id:uid(),name:o.name,done:false,ref:oid});
+    if(!o.stops.some(x=>x.ref===s.id))o.stops.push({id:uid(),name:s.name,done:false,ref:s.id})});
+  toast(o.name+'を相互に関連スポットへ登録しました')}
+function delStop(id){mut(s=>{const x=s.stops.find(a=>a.id===id);if(x&&x.ref){const o=find(x.ref);if(o)o.stops=o.stops.filter(a=>a.ref!==s.id)}s.stops=s.stops.filter(a=>a.id!==id)})}
+function fixRefs(){db.forEach(s=>s.stops.forEach(x=>{if(x.ref&&!db.some(o=>o.id===x.ref))x.ref=''}))}
+function addSch(){const t=$('#sct').value,x=$('#sctx').value.trim();if(!x){toast('予定を入力してください');return}mut(s=>s.sched.push({id:uid(),time:t,text:x}))}
+function setTime(id,v){mut(s=>{const x=s.sched.find(a=>a.id===id);if(x)x.time=v})}
+function addBud(){const n=$('#bn').value.trim(),a=Number($('#ba').value);if(!n||!(a>=0)||$('#ba').value===''){toast('項目名と金額を入力してください');return}mut(s=>s.budget.push({id:uid(),name:n,amt:a}))}
+function setPeople(d){mut(s=>{s.people=Math.max(1,Math.min(99,s.people+d))})}
+
+/* ics */
+function icsText(s){
+  const esc=t=>String(t).replace(/\\/g,'\\\\').replace(/[,;]/g,'\\$&').replace(/\n/g,'\\n');
+  const n=new Date(s.resv+'T00:00:00');n.setDate(n.getDate()+1);
+  const e=n.getFullYear()+p2(n.getMonth()+1)+p2(n.getDate());
+  const st=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+  const site=safeUrl(s.url);
+  return['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//kisetsu-trip//JA','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+s.id+'-'+s.resv+'@kisetsu-trip','DTSTAMP:'+st,'DTSTART;VALUE=DATE:'+s.resv.replace(/-/g,''),'DTEND;VALUE=DATE:'+e,'SUMMARY:'+esc('予約開始：'+s.name),
+  'DESCRIPTION:'+esc([s.addr,s.note].filter(Boolean).join('\n')),site?'URL:'+site:'','BEGIN:VALARM','TRIGGER:PT0S','ACTION:DISPLAY','DESCRIPTION:'+esc('予約開始：'+s.name),'END:VALARM','END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n')}
+function dlIcs(){
+  const s=find(cur);if(!s.resv){toast('予約開始日が未設定です。右上の編集から設定してください');return}
+  try{const b=new Blob([icsText(s)],{type:'text/calendar;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='予約開始_'+s.name.replace(/[\\/:*?"<>|\s]/g,'')+'.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('カレンダー用ファイルを作成しました')}catch(e){toast('作成できませんでした。「.icsの内容をコピー」をお試しください')}}
+function copyIcs(){const s=find(cur);if(!s.resv){toast('予約開始日が未設定です');return}copy(icsText(s)).then(()=>toast('.icsの内容をコピーしました'))}
+
+/* sheet */
+function sheet(h){$('#shc').innerHTML=h;$('#sh').style.display='flex'}
+function closeSheet(){$('#sh').style.display='none'}
+$('#sh').addEventListener('click',e=>{if(e.target.id==='sh')closeSheet()});
+function openForm(id){
+  fid=id||null;fx=null;const s=id?find(id):{name:'',months:[],cat:CATS[0],addr:'',url:'',resv:'',note:''};
+  fm=[...s.months];
+  sheet(`<h3 style="font-size:17px">${id?'スポットを編集':'スポットを追加'}</h3>
+<details class="card" id="fxd" ${id?'':'open'} style="margin:0 0 4px"><summary style="font-weight:600;cursor:pointer">✨ 自動入力（URL・AIの出力から）</summary>
+<label>公式サイトのURLから読み取る</label>
+<div class="add"><input id="fx_url" type="url" inputmode="url" placeholder="https://"><button onclick="fetchUrl()">読み取り</button></div>
+<button class="btn alt" onclick="copyPrompt()">AIに頼むための指示文をコピー</button>
+<label>AIの出力やコピーした文章を貼り付け</label>
+<textarea id="fx_txt" placeholder="ChatGPTなどが出力したJSON、またはサイトの文章を貼り付け" style="min-height:90px"></textarea>
+<button class="btn" onclick="applyText($('#fx_txt').value,$('#fx_url').value)">貼り付けた内容を各項目に反映</button></details>
+<label>スポット名</label><input id="fn" value="${E(s.name)}" placeholder="例：〇〇キャンプ場">
+<label>おすすめの月（複数選択できます）</label><div class="mg" id="fmg"></div><div class="sub" id="fse" style="margin-top:6px"></div>
+<label>カテゴリ</label><select id="fc">${CATS.map(c=>`<option ${c===s.cat?'selected':''}>${c}</option>`).join('')}</select>
+<label>場所・住所</label><input id="fa" value="${E(s.addr)}" placeholder="住所または施設名">
+<label>都道府県（「自動」なら住所から判定します）</label><select id="fp"><option value="">自動</option>${REG.map(r=>`<optgroup label="${r[0]}">${r[1].map(p=>`<option ${p===s.pref?'selected':''}>${p}</option>`).join('')}</optgroup>`).join('')}</select>
+<label>公式サイトURL</label><input id="fu" type="url" inputmode="url" value="${E(s.url)}" placeholder="https://">
+<label>予約開始日（任意）</label><input id="fr" type="date" value="${E(s.resv)}">
+<label>メモ（持ち物・注意点など）</label><textarea id="fo">${E(s.note)}</textarea>
+<button class="btn" onclick="saveForm()">保存する</button>
+${id?`<button class="btn danger" onclick="arm('d${id}',()=>realDel('${id}'))">このスポットを削除</button>`:''}
+<button class="btn alt" onclick="closeSheet()">キャンセル</button>`);
+  drawFm()}
+function drawFm(){
+  $('#fmg').innerHTML=[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>`<button class="${fm.includes(m)?'on':''}" onclick="fmT(${m})">${m}月</button>`).join('');
+  const se=[...new Set(fm.map(seasonOf))].map(k=>SEA[k][0]+SEA[k][1]);
+  $('#fse').textContent=se.length?'季節：'+se.join('・'):'月を選ぶと季節が自動で決まります';}
+function fmT(m){fm=fm.includes(m)?fm.filter(x=>x!==m):[...fm,m];drawFm()}
+function saveForm(){
+  const name=$('#fn').value.trim();
+  if(!name){toast('スポット名を入力してください');return}
+  if(!fm.length){toast('おすすめの月を選んでください');return}
+  let u=$('#fu').value.trim();if(u&&!/^https?:\/\//i.test(u))u='https://'+u;
+  const v={name,months:[...fm].sort((a,b)=>a-b),cat:$('#fc').value,addr:$('#fa').value.trim(),url:u,resv:$('#fr').value,note:$('#fo').value.trim(),pref:$('#fp').value};
+  if(fid){Object.assign(find(fid),v);mergeFx(find(fid));db.forEach(o=>o.stops.forEach(x=>{if(x.ref===fid)x.name=v.name}))}else{db.unshift(clean(Object.assign(v,{id:uid()},fx||{})))}
+  persist();closeSheet();cur?det():render();toast('保存しました')}
+</script>
+<script>
+/* delete uses two-tap confirmation */
+function realDel(id){db=db.filter(s=>s.id!==id);db.forEach(s=>{s.stops=s.stops.filter(x=>x.ref!==id)});persist();closeSheet();if(cur){cur=null;$('#det').style.display='none';document.documentElement.style.overflow=''}render();toast('削除しました')}
+
+/* settings / backup */
+function openSet(){
+  sheet(`<h3 style="font-size:17px">設定・バックアップ</h3>
+<div class="sub">データはこの端末のブラウザに自動保存されています。機種変更やデータ消去に備えて、時々書き出しておくと安心です。</div>
+<details class="card" open style="margin-top:12px"><summary style="font-weight:600;cursor:pointer">📖 使い方</summary>
+<div class="sub" style="line-height:1.7;margin-top:8px">
+<b style="color:var(--tx)">基本</b><br>・上のタブで季節を選ぶと、その下に月が出ます。<br>・「🗾 地域で見る」に切り替えると、エリアとその下の都道府県で絞り込めます。<br>・右下の「＋ スポット追加」で登録し、カードをタップすると詳細と計画画面が開きます。<br>・詳細の右上✎で編集、編集画面の下の赤いボタン（2回タップ）で削除できます。<br><br>
+<b style="color:var(--tx)">おでかけ計画（詳細画面）</b><br>・Googleマップで経路を開く<br>・関連スポットに、道の駅やお店を追加できます。名前を入力すると登録済みスポットが候補に出て、選ぶと相手側にも自動で登録されます。<br>・時間と予定を追加すると時間順に並びます<br>・予算を入れると合計と1人あたりの金額が出ます（人数は＋−で変更）<br>・「予約リマインドをカレンダーに登録」で.icsを作成し、iPhoneカレンダー（TimeTree連携）に追加できます。予約開始日の登録が必要です。<br><br>
+<b style="color:var(--tx)">公式サイトのURLから登録する</b><br>1. Claudeのチャットに公式サイトのURLを送り、「アプリ用に」と伝えます。<br>2. 返ってきたJSONをコピーします。<br>3. このメニューの下の欄に貼り付け、「貼り付けたスポットを追加で取り込む」を押します。今あるデータは残ります。同じ名前のスポットは、重複せず内容を更新します。<br><br>
+<b style="color:var(--tx)">スポットの自動入力</b><br>・「＋ スポット追加」の「✨ 自動入力」に、公式サイトのURLを入れて「読み取り」を押すと、名前・住所などが入ります（簡易的な読み取り）。<br>・より正確にしたいときは、「AIに頼むための指示文をコピー」をChatGPTなどに貼り付け、出力を欄に貼り付けて反映します。<br>・複数件のJSONを貼ると、まとめて登録されます。<br><br><b style="color:var(--tx)">同期</b><br>・データはSupabaseに保存され、2台のスマホで自動で同期されます。画面上部の「☁︎」で状態を確認できます。<br>・相手が変更すると、数秒で自動的に反映されます。<br><br><b style="color:var(--tx)">バックアップ</b><br>・「全データをコピー」で書き出し、メモなどに保管してください。<br>・「復元」は今のデータをすべて上書きするので、ご注意ください。</div></details>
+<button class="btn" onclick="doExport()">全データをコピー（書き出し）</button>
+<label>バックアップのテキスト（コピー用・貼り付け用）</label>
+<textarea id="bk" style="min-height:140px;font-size:13px" placeholder="ここにバックアップを貼り付けて「復元」を押します"></textarea>
+<button class="btn" onclick="doMerge()">貼り付けたスポットを追加で取り込む</button>
+<button class="btn alt" onclick="doImport()">貼り付けたテキストから復元（全データを上書き）</button>
+<button class="btn alt" onclick="closeSheet()">閉じる</button>`)}
+function doExport(){const t=JSON.stringify({app:'kisetsu-trip',v:1,spots:db},null,1);const b=$('#bk');b.value=t;copy(t).then(()=>toast('クリップボードにコピーしました'))}
+function doImport(){
+  const t=$('#bk').value.trim();if(!t){toast('テキストを貼り付けてください');return}
+  try{const v=JSON.parse(t);const a=Array.isArray(v)?v:v.spots;if(!Array.isArray(a))throw 0;
+    if(armed!=='imp'){armed='imp';toast('現在のデータ（相手のスマホ分も）が上書きされます。もう一度タップで復元');setTimeout(()=>{armed=''},3500);return}
+    armed='';db=a.map(clean);fixRefs();persist();closeSheet();render();toast(db.length+'件を復元しました')}
+  catch(e){toast('読み込めませんでした。形式を確認してください')}}
+function doMerge(){
+  const t=$('#bk').value.trim();if(!t){toast('テキストを貼り付けてください');return}
+  try{const v=JSON.parse(t);let a=Array.isArray(v)?v:(v&&Array.isArray(v.spots)?v.spots:[v]);
+    a=a.filter(x=>x&&typeof x==='object'&&x.name);if(!a.length)throw 0;
+    const ids=new Set(db.map(s=>s.id));
+    let nw=0,up=0;a.forEach(x=>{const c=clean(x),ex=db.find(o=>o.name===c.name);if(ex){up++;if(c.months.length)ex.months=c.months;ex.cat=c.cat;ex.addr=c.addr||ex.addr;ex.pref=c.pref||ex.pref;ex.url=c.url||ex.url;ex.resv=c.resv||ex.resv;ex.note=c.note||ex.note;c.stops.forEach(y=>{if(!ex.stops.some(z=>z.name===y.name))ex.stops.push(y)});if(!ex.sched.length)ex.sched=c.sched;if(!ex.budget.length)ex.budget=c.budget;return}nw++;if(ids.has(c.id))c.id=uid();ids.add(c.id);db.unshift(c)});fixRefs();
+    persist();closeSheet();render();toast(nw+'件を追加、'+up+'件を更新しました')}
+  catch(e){toast('読み込めませんでした。形式を確認してください')}}
+render();
+startSync();
+</script>
+</body>
+</html>
